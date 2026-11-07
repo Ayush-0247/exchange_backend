@@ -2,14 +2,17 @@
   "name": "backend",
   "version": "1.0.0",
   "main": "index.js",
-  "scripts": {
-  "dev": "nodemon src/server.js",
   "type": "module",
-  "start": "node src/server.js",
-  "db:generate": "prisma generate",
-  "db:migrate": "prisma migrate dev",
-  "db:studio": "prisma studio"
-},
+  "scripts": {
+    "dev": "node src/server.js",
+    "start": "node src/server.js",
+    "build": "node -e 'console.log(\"Build ready\")'",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
+    "lint": "eslint .",
+    "bench": "node bench/engine.bench.js"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -34,7 +37,11 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^5.1.0",
+    "eslint": "^10.14.0",
+    "fast-check": "^4.10.2",
     "nodemon": "^3.1.14",
-    "prisma": "^7.10.1"
+    "prisma": "^7.10.1",
+    "vitest": "^5.1.0"
   }
 }

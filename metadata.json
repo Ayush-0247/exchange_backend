@@ -1,0 +1,8 @@
+{
+  "name": "Matching Engine Foundation - Exchange Backend",
+  "description": "High-performance, pure JavaScript price-time priority matching engine simulation for Bitcoin-INR trading with O(1) cancel, self-trade prevention, and live visual simulator.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

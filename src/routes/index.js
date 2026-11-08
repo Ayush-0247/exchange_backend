@@ -9,15 +9,13 @@ router.use('/auth', authRoutes);
 
 // Health check endpoint
 router.get('/health', async (req, res) => {
-  const usersCount = await db.countUsers();
+  const dbHealth = await db.healthCheck();
   res.json({
     status: 'ok',
     service: 'exchange-auth-backend',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
-    metrics: {
-      registeredUsers: usersCount
-    }
+    database: dbHealth
   });
 });
 

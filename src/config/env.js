@@ -14,5 +14,6 @@ export const config = {
   },
   cors: {
     origin: process.env.CORS_ORIGIN || '*'
-  }
+  },
+  databaseUrl: process.env.DATABASE_URL || process.env.POSTGRES_URL || ''
 };

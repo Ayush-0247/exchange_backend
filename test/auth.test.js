@@ -1,14 +1,20 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import http from 'http';
+import bcrypt from 'bcryptjs';
 import { app } from '../src/app.js';
 import { db } from '../src/config/db.js';
 
 let server;
 let baseUrl;
 
+// In-test mock store to simulate PostgreSQL Prisma operations reliably in test runner
+let testUsers = [];
+let testRefreshTokens = [];
+
+const DEMO_PASSWORD_HASH = bcrypt.hashSync('Password123!', 10);
+
 beforeAll(async () => {
   return new Promise((resolve) => {
-    // Listen on port 0 to allocate an ephemeral free port
     server = http.createServer(app);
     server.listen(0, '127.0.0.1', () => {
       const { port } = server.address();
@@ -25,17 +31,76 @@ afterAll(async () => {
 });
 
 beforeEach(() => {
-  db.reset();
+  testUsers = [
+    {
+      id: 'usr_demo_1',
+      email: 'trader@exchange.com',
+      name: 'Demo Trader',
+      password: DEMO_PASSWORD_HASH,
+      role: 'user',
+      isVerified: true,
+      createdAt: new Date('2025-01-01'),
+      updatedAt: new Date('2025-01-01')
+    }
+  ];
+  testRefreshTokens = [];
+
+  vi.spyOn(db, 'findUserByEmail').mockImplementation(async (email) => {
+    return testUsers.find((u) => u.email.toLowerCase() === email.toLowerCase()) || null;
+  });
+
+  vi.spyOn(db, 'findUserById').mockImplementation(async (id) => {
+    return testUsers.find((u) => u.id === id) || null;
+  });
+
+  vi.spyOn(db, 'createUser').mockImplementation(async ({ email, password, name = '', role = 'user' }) => {
+    const newUser = {
+      id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      email,
+      name,
+      password,
+      role,
+      isVerified: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    testUsers.push(newUser);
+    return newUser;
+  });
+
+  vi.spyOn(db, 'saveRefreshToken').mockImplementation(async ({ token, userId, expiresAt }) => {
+    testRefreshTokens.push({ token, userId, expiresAt });
+  });
+
+  vi.spyOn(db, 'findRefreshToken').mockImplementation(async (token) => {
+    return testRefreshTokens.find((r) => r.token === token) || null;
+  });
+
+  vi.spyOn(db, 'deleteRefreshToken').mockImplementation(async (token) => {
+    testRefreshTokens = testRefreshTokens.filter((r) => r.token !== token);
+  });
+
+  vi.spyOn(db, 'deleteUserRefreshTokens').mockImplementation(async (userId) => {
+    testRefreshTokens = testRefreshTokens.filter((r) => r.userId !== userId);
+  });
+
+  vi.spyOn(db, 'countUsers').mockImplementation(async () => testUsers.length);
+  vi.spyOn(db, 'healthCheck').mockImplementation(async () => ({
+    connected: true,
+    orm: 'Prisma 7',
+    database: 'PostgreSQL (Neon)',
+    userCount: testUsers.length
+  }));
 });
 
-describe('Authentication API Suite', () => {
-  it('GET /api/health should return ok status and metrics', async () => {
+describe('Authentication API Suite (Prisma ORM & PostgreSQL)', () => {
+  it('GET /api/health should return ok status and database info', async () => {
     const res = await fetch(`${baseUrl}/api/health`);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.status).toBe('ok');
     expect(body.service).toBe('exchange-auth-backend');
-    expect(body.metrics.registeredUsers).toBeGreaterThanOrEqual(1);
+    expect(body.database.orm).toBe('Prisma 7');
   });
 
   describe('POST /api/auth/register', () => {
@@ -55,7 +120,7 @@ describe('Authentication API Suite', () => {
       expect(body.success).toBe(true);
       expect(body.data.user.email).toBe('bob@example.com');
       expect(body.data.user.name).toBe('Bob Trader');
-      expect(body.data.user.password).toBeUndefined(); // Password must not leak
+      expect(body.data.user.password).toBeUndefined();
       expect(body.data.tokens.accessToken).toBeDefined();
       expect(body.data.tokens.refreshToken).toBeDefined();
     });
@@ -66,7 +131,7 @@ describe('Authentication API Suite', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: 'Demo Duplicate',
-          email: 'trader@exchange.com', // Seeded demo user
+          email: 'trader@exchange.com',
           password: 'Password123!'
         })
       });
@@ -96,7 +161,7 @@ describe('Authentication API Suite', () => {
   });
 
   describe('POST /api/auth/login', () => {
-    it('logs in seeded demo user with valid credentials', async () => {
+    it('logs in user with valid credentials', async () => {
       const res = await fetch(`${baseUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -133,7 +198,6 @@ describe('Authentication API Suite', () => {
 
   describe('Protected Routes & Token Refresh', () => {
     it('accesses GET /api/auth/me with Bearer token', async () => {
-      // Login first
       const loginRes = await fetch(`${baseUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -145,7 +209,6 @@ describe('Authentication API Suite', () => {
       const loginBody = await loginRes.json();
       const token = loginBody.data.tokens.accessToken;
 
-      // Access protected me
       const meRes = await fetch(`${baseUrl}/api/auth/me`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -176,7 +239,6 @@ describe('Authentication API Suite', () => {
       const loginBody = await loginRes.json();
       const initialRefreshToken = loginBody.data.tokens.refreshToken;
 
-      // Refresh
       const refreshRes = await fetch(`${baseUrl}/api/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -211,7 +273,6 @@ describe('Authentication API Suite', () => {
       const loginBody = await loginRes.json();
       const rToken = loginBody.data.tokens.refreshToken;
 
-      // Logout
       const logoutRes = await fetch(`${baseUrl}/api/auth/logout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -219,7 +280,6 @@ describe('Authentication API Suite', () => {
       });
       expect(logoutRes.status).toBe(200);
 
-      // Subsequent refresh with that token must be rejected
       const refreshRes = await fetch(`${baseUrl}/api/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

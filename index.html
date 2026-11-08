@@ -1,465 +1,420 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Exchange Auth API — Interactive Tester & Service</title>
-  <meta name="description" content="Exchange Authentication Service with JWT, refresh token rotation, bcrypt password hashing, and clean MVC architecture." />
-  <style>
-    :root {
-      --bg: #090d16;
-      --card: #111827;
-      --card-hover: #162032;
-      --border: #1f2937;
-      --border-focus: #3b82f6;
-      --text: #f3f4f6;
-      --muted: #9ca3af;
-      --accent: #3b82f6;
-      --accent-hover: #2563eb;
-      --green: #10b981;
-      --green-bg: rgba(16, 185, 129, 0.12);
-      --red: #ef4444;
-      --red-bg: rgba(239, 68, 68, 0.12);
-      --amber: #f59e0b;
-      --amber-bg: rgba(245, 158, 11, 0.12);
-      --purple: #8b5cf6;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      padding: 24px;
-      line-height: 1.5;
-    }
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-    .title-group h1 {
-      font-size: 22px;
-      font-weight: 700;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .badge {
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 9999px;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      background: #1e3a8a;
-      color: #93c5fd;
-    }
-    .badge-green { background: var(--green-bg); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
-    .badge-purple { background: #4c1d95; color: #c4b5fd; }
-    .subtext { font-size: 13px; color: var(--muted); margin-top: 4px; }
-
-    .status-banner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: rgba(30, 41, 59, 0.7);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 18px;
-      margin-bottom: 24px;
-      font-size: 13px;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .auth-state {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
-    }
-    .indicator-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--muted);
-    }
-    .indicator-dot.online { background: var(--green); box-shadow: 0 0 10px var(--green); }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-    }
-    @media (max-width: 900px) {
-      .grid { grid-template-columns: 1fr; }
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 20px;
-      margin-bottom: 24px;
-    }
-    .card-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .nav-tabs {
-      display: flex;
-      gap: 8px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 18px;
-      padding-bottom: 6px;
-    }
-    .tab-btn {
-      background: transparent;
-      border: none;
-      color: var(--muted);
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .tab-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
-    .tab-btn.active { color: var(--accent); background: rgba(59, 130, 246, 0.1); }
-
-    .tab-pane { display: none; }
-    .tab-pane.active { display: block; }
-
-    .form-group {
-      margin-bottom: 14px;
-    }
-    label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--muted);
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    input {
-      width: 100%;
-      background: #0b0f19;
-      border: 1px solid var(--border);
-      color: #fff;
-      padding: 10px 12px;
-      border-radius: 6px;
-      font-size: 13px;
-      transition: border-color 0.2s;
-    }
-    input:focus {
-      outline: none;
-      border-color: var(--border-focus);
-    }
-    .hint {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 4px;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      background: var(--accent);
-      color: white;
-      border: none;
-      padding: 9px 16px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .btn:hover { background: var(--accent-hover); }
-    .btn-secondary { background: #374151; }
-    .btn-secondary:hover { background: #4b5563; }
-    .btn-danger { background: #dc2626; }
-    .btn-danger:hover { background: #b91c1c; }
-    .btn-success { background: #059669; }
-    .btn-success:hover { background: #047857; }
-    .btn-group {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 14px;
-    }
-
-    .quick-actions {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-    }
-
-    .log-box {
-      background: #050811;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 14px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 12px;
-      max-height: 480px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      word-break: break-all;
-      color: #cbd5e1;
-    }
-    .response-header {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--muted);
-      margin-bottom: 6px;
-      display: flex;
-      justify-content: space-between;
-    }
-    .status-tag {
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 4px;
-    }
-    .status-tag.ok { background: var(--green-bg); color: var(--green); }
-    .status-tag.err { background: var(--red-bg); color: var(--red); }
-
-    .token-preview {
-      background: #090e1a;
-      border: 1px dashed var(--border);
-      border-radius: 6px;
-      padding: 10px;
-      font-family: monospace;
-      font-size: 11px;
-      color: #93c5fd;
-      margin-top: 10px;
-      word-break: break-all;
-      max-height: 80px;
-      overflow-y: auto;
-    }
-
-    .endpoint-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 12px;
-    }
-    .endpoint-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 12px;
-      background: rgba(15, 23, 42, 0.6);
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .method {
-      font-weight: 700;
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-    }
-    .method.post { background: #1e3a8a; color: #93c5fd; }
-    .method.get { background: #064e3b; color: #6ee7b7; }
-    .method.put { background: #78350f; color: #fde68a; }
-    .path { font-family: monospace; color: #e2e8f0; font-weight: 600; }
-    .desc { color: var(--muted); margin-left: auto; font-size: 11px; }
-  </style>
+  <title>Exchange Auth API — Prisma ORM & PostgreSQL (Neon)</title>
+  <meta name="description" content="Exchange Authentication Service with Prisma 7 ORM, Neon PostgreSQL, JWT access & refresh token rotation, and Zod validation." />
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8'
+            }
+          }
+        }
+      }
+    };
+  </script>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="title-group">
-        <h1>Exchange Auth Service <span class="badge badge-green">Active</span> <span class="badge badge-purple">MVC Architecture</span></h1>
-        <div class="subtext">JWT Access & Refresh Tokens • Bcrypt Hashing • Zod Validation • In-Memory Store • Clean Separation of Concerns</div>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-blue-600 selection:text-white">
+
+  <!-- Notification Toast Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-md w-full pointer-events-none"></div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Header -->
+    <header class="flex flex-wrap items-center justify-between pb-6 mb-6 border-b border-slate-800 gap-4">
+      <div class="space-y-1">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <h1 class="text-2xl font-bold tracking-tight text-white">Exchange Auth Service</h1>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
+            Active
+          </span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-950/80 text-purple-300 border border-purple-800/60">
+            Prisma 7 ORM
+          </span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-950/80 text-sky-300 border border-sky-800/60">
+            PostgreSQL (Neon)
+          </span>
+        </div>
+        <p class="text-xs sm:text-sm text-slate-400">
+          Pure JavaScript (Node.js) • Prisma ORM • PostgreSQL (Neon) • JWT Access & Refresh Token Rotation • Bcrypt
+        </p>
       </div>
-      <div style="display: flex; gap: 8px;">
-        <button class="btn btn-secondary" onclick="checkHealth()">Check Health</button>
-        <button class="btn btn-danger" onclick="clearSession()">Reset Session</button>
+
+      <div class="flex items-center gap-3">
+        <button
+          onclick="checkHealth()"
+          class="inline-flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-200 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 rounded-lg transition-colors focus:ring-2 focus:ring-slate-600 focus:outline-none"
+        >
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Database Health
+        </button>
+        <button
+          onclick="clearSession()"
+          class="inline-flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-medium text-rose-300 bg-rose-950/30 hover:bg-rose-900/50 border border-rose-800/50 rounded-lg transition-colors focus:ring-2 focus:ring-rose-500 focus:outline-none"
+        >
+          Reset Session
+        </button>
+      </div>
+    </header>
+
+    <!-- Status Banner -->
+    <div class="bg-slate-900/80 border border-slate-800/90 rounded-xl px-4 py-3 mb-8 flex flex-wrap items-center justify-between gap-3 shadow-inner">
+      <div class="flex items-center gap-3">
+        <span id="auth-dot" class="w-2.5 h-2.5 rounded-full bg-slate-600 transition-colors"></span>
+        <div class="text-sm font-semibold text-slate-300" id="auth-status-text">Not Authenticated</div>
+      </div>
+      <div id="auth-user-badge" class="text-xs font-mono text-slate-400 bg-slate-950 px-2.5 py-1 rounded border border-slate-800">
+        No active user token
       </div>
     </div>
 
-    <div class="status-banner">
-      <div class="auth-state">
-        <span class="indicator-dot" id="auth-dot"></span>
-        <span id="auth-status-text">Not Authenticated</span>
-      </div>
-      <div id="auth-user-badge" style="color: var(--muted); font-size: 12px;">No active user token</div>
-    </div>
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-    <div class="grid">
-      <!-- Left Column: Authentication Controls -->
-      <div>
-        <div class="card">
-          <div class="nav-tabs">
-            <button class="tab-btn active" onclick="switchTab('login')">Log In</button>
-            <button class="tab-btn" onclick="switchTab('register')">Register</button>
-            <button class="tab-btn" onclick="switchTab('profile')">User Profile</button>
-            <button class="tab-btn" onclick="switchTab('security')">Password</button>
+      <!-- Left Column: Interactive Controls -->
+      <div class="lg:col-span-6 space-y-6">
+
+        <!-- Card: Tabbed Forms -->
+        <div class="bg-slate-900 border border-slate-800/90 rounded-xl p-6 shadow-xl shadow-black/20">
+
+          <!-- Tabs Header -->
+          <div class="flex space-x-1.5 border-b border-slate-800 pb-3 mb-6 overflow-x-auto">
+            <button
+              id="btn-tab-login"
+              onclick="switchTab('login')"
+              class="px-3.5 py-1.5 text-xs font-semibold rounded-lg text-blue-400 bg-blue-950/70 border border-blue-800/50 transition-all"
+            >
+              Log In
+            </button>
+            <button
+              id="btn-tab-register"
+              onclick="switchTab('register')"
+              class="px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all"
+            >
+              Register
+            </button>
+            <button
+              id="btn-tab-profile"
+              onclick="switchTab('profile')"
+              class="px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all"
+            >
+              User Profile
+            </button>
+            <button
+              id="btn-tab-security"
+              onclick="switchTab('security')"
+              class="px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all"
+            >
+              Password
+            </button>
           </div>
 
           <!-- Tab 1: Log In -->
-          <div id="tab-login" class="tab-pane active">
-            <div class="quick-actions">
-              <button class="btn btn-secondary" style="font-size: 11px;" onclick="fillDemoCredentials()">Use Demo Account</button>
+          <div id="tab-login" class="space-y-4">
+            <div class="flex items-center justify-between pb-1">
+              <span class="text-xs text-slate-400 font-medium">Log into your exchange account</span>
+              <button
+                type="button"
+                onclick="fillDemoCredentials()"
+                class="text-xs font-medium text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
+              >
+                Fill Demo Credentials
+              </button>
             </div>
-            <form onsubmit="handleLogin(event)">
-              <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" id="login-email" value="trader@exchange.com" required />
+
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="login-email"
+                  value="trader@exchange.com"
+                  required
+                  class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
               </div>
-              <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="login-password" value="Password123!" required />
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="login-password"
+                  value="Password123!"
+                  required
+                  class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
               </div>
-              <div class="btn-group">
-                <button type="submit" class="btn">Log In</button>
-              </div>
+
+              <button
+                type="submit"
+                class="w-full inline-flex items-center justify-center font-medium rounded-lg text-sm px-4 py-2.5 text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+              >
+                Log In
+              </button>
             </form>
           </div>
 
           <!-- Tab 2: Register -->
-          <div id="tab-register" class="tab-pane">
-            <form onsubmit="handleRegister(event)">
-              <div class="form-group">
-                <label>Full Name</label>
-                <input type="text" id="reg-name" placeholder="Alice Trader" />
+          <div id="tab-register" class="space-y-4 hidden">
+            <form onsubmit="handleRegister(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  id="reg-name"
+                  placeholder="Alice Trader"
+                  class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
               </div>
-              <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" id="reg-email" placeholder="alice@exchange.com" required />
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="reg-email"
+                  placeholder="alice@exchange.com"
+                  required
+                  class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
               </div>
-              <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="reg-password" placeholder="Min 8 chars, 1 uppercase, 1 digit" required />
-                <div class="hint">Must contain at least 8 chars, 1 uppercase letter, 1 lowercase letter, 1 number.</div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="reg-password"
+                  placeholder="At least 8 chars, 1 uppercase, 1 digit"
+                  required
+                  class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+                <p class="mt-1 text-xs text-slate-500">
+                  Minimum 8 characters with 1 uppercase, 1 lowercase, and 1 number.
+                </p>
               </div>
-              <div class="btn-group">
-                <button type="submit" class="btn btn-success">Create Account</button>
-              </div>
+
+              <button
+                type="submit"
+                class="w-full inline-flex items-center justify-center font-medium rounded-lg text-sm px-4 py-2.5 text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+              >
+                Create Account
+              </button>
             </form>
           </div>
 
           <!-- Tab 3: User Profile & Actions -->
-          <div id="tab-profile" class="tab-pane">
-            <p style="font-size: 13px; color: var(--muted); margin-bottom: 14px;">
-              Protected route requiring valid Bearer Access Token.
+          <div id="tab-profile" class="space-y-5 hidden">
+            <p class="text-xs text-slate-400">
+              Protected endpoints requiring an active JWT Bearer token in the <code class="text-blue-400 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">Authorization</code> header.
             </p>
-            <div class="btn-group">
-              <button class="btn" onclick="fetchProfile()">Fetch Profile (GET /api/auth/me)</button>
-              <button class="btn btn-secondary" onclick="verifyActiveToken()">Verify Token</button>
-              <button class="btn btn-secondary" onclick="handleRefresh()">Refresh Token</button>
-              <button class="btn btn-danger" onclick="handleLogout()">Log Out</button>
+
+            <div class="grid grid-cols-2 gap-2.5">
+              <button
+                onclick="fetchProfile()"
+                class="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+              >
+                GET /api/auth/me
+              </button>
+              <button
+                onclick="verifyActiveToken()"
+                class="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors border border-slate-700"
+              >
+                Verify Token
+              </button>
+              <button
+                onclick="handleRefresh()"
+                class="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors border border-slate-700"
+              >
+                Rotate Refresh Token
+              </button>
+              <button
+                onclick="handleLogout()"
+                class="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-rose-300 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/60 rounded-lg transition-colors"
+              >
+                Log Out
+              </button>
             </div>
-            <div id="token-box" style="display: none; margin-top: 14px;">
-              <label>Current Access Token</label>
-              <div class="token-preview" id="token-display">None</div>
+
+            <div id="token-box" class="hidden space-y-2 pt-2 border-t border-slate-800">
+              <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                Current Access Token (JWT)
+              </span>
+              <div id="token-display" class="font-mono text-[11px] text-blue-300 bg-slate-950 border border-slate-800 rounded-lg p-3 break-all max-h-24 overflow-y-auto">
+                None
+              </div>
             </div>
           </div>
 
           <!-- Tab 4: Security & Password -->
-          <div id="tab-security" class="tab-pane">
-            <form onsubmit="handleChangePassword(event)">
-              <div class="form-group">
-                <label>Current Password</label>
-                <input type="password" id="curr-password" required />
+          <div id="tab-security" class="space-y-4 hidden">
+            <form onsubmit="handleChangePassword(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  id="curr-password"
+                  required
+                  class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
               </div>
-              <div class="form-group">
-                <label>New Password</label>
-                <input type="password" id="new-password" required />
-                <div class="hint">Min 8 chars, 1 uppercase, 1 lowercase, 1 digit.</div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  id="new-password"
+                  required
+                  class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+                <p class="mt-1 text-xs text-slate-500">
+                  Minimum 8 characters with 1 uppercase, 1 lowercase, and 1 number.
+                </p>
               </div>
-              <div class="btn-group">
-                <button type="submit" class="btn btn-secondary">Update Password</button>
-              </div>
+
+              <button
+                type="submit"
+                class="w-full inline-flex items-center justify-center font-medium rounded-lg text-sm px-4 py-2.5 text-white bg-slate-800 hover:bg-slate-700 active:bg-slate-900 border border-slate-700 transition-colors shadow-sm"
+              >
+                Update Password
+              </button>
             </form>
+          </div>
+
+        </div>
+
+        <!-- Card: API Endpoint Specification -->
+        <div class="bg-slate-900 border border-slate-800/90 rounded-xl p-5 shadow-xl shadow-black/20">
+          <h2 class="text-sm font-bold text-white uppercase tracking-wider mb-3">
+            Authentication Endpoints (Prisma / Neon)
+          </h2>
+          <div class="space-y-2">
+            <div class="flex items-center gap-3 bg-slate-950/70 border border-slate-800/80 rounded-lg px-3 py-2 text-xs">
+              <span class="px-2 py-0.5 rounded font-mono font-bold bg-blue-950 text-blue-400 border border-blue-800/60 text-[10px]">POST</span>
+              <span class="font-mono text-slate-200 font-medium">/api/auth/register</span>
+              <span class="ml-auto text-slate-400 text-[11px]">Create user in PostgreSQL</span>
+            </div>
+            <div class="flex items-center gap-3 bg-slate-950/70 border border-slate-800/80 rounded-lg px-3 py-2 text-xs">
+              <span class="px-2 py-0.5 rounded font-mono font-bold bg-blue-950 text-blue-400 border border-blue-800/60 text-[10px]">POST</span>
+              <span class="font-mono text-slate-200 font-medium">/api/auth/login</span>
+              <span class="ml-auto text-slate-400 text-[11px]">Authenticate via Prisma</span>
+            </div>
+            <div class="flex items-center gap-3 bg-slate-950/70 border border-slate-800/80 rounded-lg px-3 py-2 text-xs">
+              <span class="px-2 py-0.5 rounded font-mono font-bold bg-blue-950 text-blue-400 border border-blue-800/60 text-[10px]">POST</span>
+              <span class="font-mono text-slate-200 font-medium">/api/auth/refresh</span>
+              <span class="ml-auto text-slate-400 text-[11px]">Rotate refresh token</span>
+            </div>
+            <div class="flex items-center gap-3 bg-slate-950/70 border border-slate-800/80 rounded-lg px-3 py-2 text-xs">
+              <span class="px-2 py-0.5 rounded font-mono font-bold bg-blue-950 text-blue-400 border border-blue-800/60 text-[10px]">POST</span>
+              <span class="font-mono text-slate-200 font-medium">/api/auth/logout</span>
+              <span class="ml-auto text-slate-400 text-[11px]">Revoke session</span>
+            </div>
+            <div class="flex items-center gap-3 bg-slate-950/70 border border-slate-800/80 rounded-lg px-3 py-2 text-xs">
+              <span class="px-2 py-0.5 rounded font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/60 text-[10px]">GET</span>
+              <span class="font-mono text-slate-200 font-medium">/api/auth/me</span>
+              <span class="ml-auto text-slate-400 text-[11px]">Get profile (Bearer)</span>
+            </div>
+            <div class="flex items-center gap-3 bg-slate-950/70 border border-slate-800/80 rounded-lg px-3 py-2 text-xs">
+              <span class="px-2 py-0.5 rounded font-mono font-bold bg-amber-950 text-amber-300 border border-amber-800/60 text-[10px]">PUT</span>
+              <span class="font-mono text-slate-200 font-medium">/api/auth/change-password</span>
+              <span class="ml-auto text-slate-400 text-[11px]">Update password</span>
+            </div>
+            <div class="flex items-center gap-3 bg-slate-950/70 border border-slate-800/80 rounded-lg px-3 py-2 text-xs">
+              <span class="px-2 py-0.5 rounded font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/60 text-[10px]">GET</span>
+              <span class="font-mono text-slate-200 font-medium">/api/health</span>
+              <span class="ml-auto text-slate-400 text-[11px]">Diagnostics</span>
+            </div>
           </div>
         </div>
 
-        <!-- Endpoints Reference Card -->
-        <div class="card">
-          <div class="card-title">Auth Endpoints Specification</div>
-          <div class="endpoint-list">
-            <div class="endpoint-item">
-              <span class="method post">POST</span>
-              <span class="path">/api/auth/register</span>
-              <span class="desc">Create account & issue tokens</span>
-            </div>
-            <div class="endpoint-item">
-              <span class="method post">POST</span>
-              <span class="path">/api/auth/login</span>
-              <span class="desc">Authenticate user & issue tokens</span>
-            </div>
-            <div class="endpoint-item">
-              <span class="method post">POST</span>
-              <span class="path">/api/auth/refresh</span>
-              <span class="desc">Rotate refresh token</span>
-            </div>
-            <div class="endpoint-item">
-              <span class="method post">POST</span>
-              <span class="path">/api/auth/logout</span>
-              <span class="desc">Revoke session</span>
-            </div>
-            <div class="endpoint-item">
-              <span class="method get">GET</span>
-              <span class="path">/api/auth/me</span>
-              <span class="desc">Get current user (Bearer)</span>
-            </div>
-            <div class="endpoint-item">
-              <span class="method put">PUT</span>
-              <span class="path">/api/auth/change-password</span>
-              <span class="desc">Update password</span>
-            </div>
-            <div class="endpoint-item">
-              <span class="method get">GET</span>
-              <span class="path">/api/auth/verify</span>
-              <span class="desc">Validate active token</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- Right Column: API Response Inspector -->
-      <div>
-        <div class="card" style="height: calc(100% - 24px);">
-          <div class="card-title">
-            <span>API Response Inspector</span>
-            <span id="response-status" class="status-tag ok" style="display: none;">200 OK</span>
+      <div class="lg:col-span-6">
+        <div class="bg-slate-900 border border-slate-800/90 rounded-xl p-6 shadow-xl shadow-black/20 flex flex-col h-full">
+
+          <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">
+              API Response Inspector
+            </h2>
+            <span
+              id="response-status"
+              class="hidden px-2 py-0.5 rounded font-mono text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/60"
+            >
+              200 OK
+            </span>
           </div>
-          <div class="response-header">
+
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-2 font-mono">
             <span id="response-route">Ready for requests...</span>
-            <span id="response-time"></span>
+            <span id="response-time" class="text-slate-500"></span>
           </div>
-          <div class="log-box" id="json-viewer">// Responses will appear here in real-time...
-// Click "Log In" with demo account or create a new user.</div>
+
+          <!-- JSON Output Box -->
+          <div
+            id="json-viewer"
+            class="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-4 font-mono text-xs text-slate-300 overflow-y-auto max-h-[560px] leading-relaxed whitespace-pre-wrap selection:bg-blue-700"
+          >// Responses from Prisma ORM & PostgreSQL will appear here in real-time...
+// Click "Log In", "Database Health", or register a new user.</div>
+
         </div>
       </div>
+
     </div>
+
   </div>
 
   <script>
     let accessToken = localStorage.getItem('exchange_access_token') || null;
     let refreshToken = localStorage.getItem('exchange_refresh_token') || null;
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto flex items-center justify-between px-4 py-3 rounded-lg text-xs font-medium border shadow-lg transition-all duration-300 ${
+        type === 'error'
+          ? 'bg-rose-950 text-rose-200 border-rose-800/80 shadow-rose-950/50'
+          : type === 'success'
+          ? 'bg-emerald-950 text-emerald-200 border-emerald-800/80 shadow-emerald-950/50'
+          : 'bg-slate-900 text-slate-200 border-slate-700 shadow-black/40'
+      }`;
+      toast.innerHTML = `
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()" class="ml-3 text-slate-400 hover:text-white">&times;</button>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
 
     function updateAuthUI() {
       const dot = document.getElementById('auth-dot');
@@ -469,40 +424,53 @@
       const tokenDisplay = document.getElementById('token-display');
 
       if (accessToken) {
-        dot.className = 'indicator-dot online';
-        statusText.innerText = 'Authenticated (Bearer Token Active)';
-        statusText.style.color = 'var(--green)';
-        userBadge.innerText = localStorage.getItem('exchange_user_email') || 'Logged in';
-        if (tokenBox) tokenBox.style.display = 'block';
-        if (tokenDisplay) tokenDisplay.innerText = accessToken;
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]';
+        statusText.innerText = 'Authenticated (Bearer Active)';
+        statusText.className = 'text-sm font-semibold text-emerald-400';
+        userBadge.innerText = localStorage.getItem('exchange_user_email') || 'Logged In';
+        tokenBox.classList.remove('hidden');
+        tokenDisplay.innerText = accessToken;
       } else {
-        dot.className = 'indicator-dot';
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-600';
         statusText.innerText = 'Not Authenticated';
-        statusText.style.color = 'var(--muted)';
+        statusText.className = 'text-sm font-semibold text-slate-400';
         userBadge.innerText = 'No active token';
-        if (tokenBox) tokenBox.style.display = 'none';
+        tokenBox.classList.add('hidden');
       }
     }
 
     function switchTab(name) {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      const tabNames = ['login', 'register', 'profile', 'security'];
 
-      event.target.classList.add('active');
-      const pane = document.getElementById(`tab-${name}`);
-      if (pane) pane.classList.add('active');
+      tabNames.forEach(t => {
+        const btn = document.getElementById(`btn-tab-${t}`);
+        const pane = document.getElementById(`tab-${t}`);
+
+        if (t === name) {
+          btn.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-lg text-blue-400 bg-blue-950/70 border border-blue-800/50 transition-all';
+          pane.classList.remove('hidden');
+        } else {
+          btn.className = 'px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all';
+          pane.classList.add('hidden');
+        }
+      });
     }
 
     function fillDemoCredentials() {
       document.getElementById('login-email').value = 'trader@exchange.com';
       document.getElementById('login-password').value = 'Password123!';
+      showToast('Loaded demo user credentials', 'info');
     }
 
     function showResponse(route, status, data, duration) {
       const statusTag = document.getElementById('response-status');
-      statusTag.style.display = 'inline-block';
+      statusTag.classList.remove('hidden');
       statusTag.innerText = status;
-      statusTag.className = status >= 200 && status < 300 ? 'status-tag ok' : 'status-tag err';
+
+      const isOk = status.startsWith('2');
+      statusTag.className = isOk
+        ? 'px-2 py-0.5 rounded font-mono text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/60'
+        : 'px-2 py-0.5 rounded font-mono text-xs font-bold bg-rose-950 text-rose-400 border border-rose-800/60';
 
       document.getElementById('response-route').innerText = route;
       document.getElementById('response-time').innerText = duration ? `${duration}ms` : '';
@@ -532,9 +500,13 @@
           localStorage.setItem('exchange_refresh_token', refreshToken);
           localStorage.setItem('exchange_user_email', data.data.user.email);
           updateAuthUI();
+          showToast(`Welcome back, ${data.data.user.name || data.data.user.email}!`, 'success');
+        } else {
+          showToast(data.message || 'Login failed', 'error');
         }
       } catch (err) {
         showResponse('POST /api/auth/login', 'Error', { error: err.message });
+        showToast(err.message, 'error');
       }
     }
 
@@ -562,15 +534,19 @@
           localStorage.setItem('exchange_refresh_token', refreshToken);
           localStorage.setItem('exchange_user_email', data.data.user.email);
           updateAuthUI();
+          showToast('Account registered in PostgreSQL successfully!', 'success');
+        } else {
+          showToast(data.message || 'Registration failed', 'error');
         }
       } catch (err) {
         showResponse('POST /api/auth/register', 'Error', { error: err.message });
+        showToast(err.message, 'error');
       }
     }
 
     async function fetchProfile() {
       if (!accessToken) {
-        alert('Please log in first.');
+        showToast('Please log in first to fetch profile.', 'error');
         return;
       }
       const t0 = performance.now();
@@ -581,6 +557,9 @@
         const duration = Math.round(performance.now() - t0);
         const data = await res.json();
         showResponse('GET /api/auth/me', `${res.status} ${res.statusText}`, data, duration);
+        if (res.ok) {
+          showToast('Profile retrieved from PostgreSQL', 'success');
+        }
       } catch (err) {
         showResponse('GET /api/auth/me', 'Error', { error: err.message });
       }
@@ -588,7 +567,7 @@
 
     async function verifyActiveToken() {
       if (!accessToken) {
-        alert('Please log in first.');
+        showToast('No active token. Please log in first.', 'error');
         return;
       }
       const t0 = performance.now();
@@ -599,6 +578,9 @@
         const duration = Math.round(performance.now() - t0);
         const data = await res.json();
         showResponse('GET /api/auth/verify', `${res.status} ${res.statusText}`, data, duration);
+        if (res.ok) {
+          showToast('Access token is valid and active!', 'success');
+        }
       } catch (err) {
         showResponse('GET /api/auth/verify', 'Error', { error: err.message });
       }
@@ -606,7 +588,7 @@
 
     async function handleRefresh() {
       if (!refreshToken) {
-        alert('No refresh token available. Please log in.');
+        showToast('No refresh token available. Please log in.', 'error');
         return;
       }
       const t0 = performance.now();
@@ -626,6 +608,9 @@
           localStorage.setItem('exchange_access_token', accessToken);
           localStorage.setItem('exchange_refresh_token', refreshToken);
           updateAuthUI();
+          showToast('Refresh token rotated successfully in PostgreSQL!', 'success');
+        } else {
+          showToast(data.message || 'Refresh failed', 'error');
         }
       } catch (err) {
         showResponse('POST /api/auth/refresh', 'Error', { error: err.message });
@@ -648,13 +633,14 @@
         showResponse('POST /api/auth/logout', `${res.status} ${res.statusText}`, data, duration);
       } finally {
         clearSession();
+        showToast('Logged out and session revoked.', 'info');
       }
     }
 
     async function handleChangePassword(e) {
       e.preventDefault();
       if (!accessToken) {
-        alert('Please log in first to change password.');
+        showToast('Please log in first to update password.', 'error');
         return;
       }
       const currentPassword = document.getElementById('curr-password').value;
@@ -675,7 +661,9 @@
         showResponse('PUT /api/auth/change-password', `${res.status} ${res.statusText}`, data, duration);
         if (res.ok) {
           clearSession();
-          alert('Password changed successfully! Please log in with your new password.');
+          showToast('Password updated! Please log in with your new password.', 'success');
+        } else {
+          showToast(data.message || 'Password update failed', 'error');
         }
       } catch (err) {
         showResponse('PUT /api/auth/change-password', 'Error', { error: err.message });
@@ -689,6 +677,11 @@
         const duration = Math.round(performance.now() - t0);
         const data = await res.json();
         showResponse('GET /api/health', `${res.status} ${res.statusText}`, data, duration);
+        if (data.database?.connected) {
+          showToast(`Connected to PostgreSQL via ${data.database.orm}!`, 'success');
+        } else {
+          showToast('Database health check executed', 'info');
+        }
       } catch (err) {
         showResponse('GET /api/health', 'Error', { error: err.message });
       }
@@ -703,7 +696,7 @@
       updateAuthUI();
     }
 
-    // Initialize UI on load
+    // Initialize UI state
     updateAuthUI();
   </script>
 </body>

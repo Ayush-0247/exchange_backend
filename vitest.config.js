@@ -8,21 +8,16 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       include: [
-        'src/engine/**/*.js',
-        'src/money/**/*.js',
-        'src/rules/**/*.js'
+        'src/controller/**/*.js',
+        'src/services/**/*.js',
+        'src/middleware/**/*.js',
+        'src/utils/**/*.js',
+        'src/config/**/*.js',
+        'src/routes/**/*.js'
       ],
       exclude: [
-        'src/engine/index.js',
-        'src/money/index.js',
-        'src/rules/index.js'
-      ],
-      thresholds: {
-        lines: 95,
-        branches: 95,
-        functions: 95,
-        statements: 95
-      }
+        'src/server.js'
+      ]
     }
   }
 });

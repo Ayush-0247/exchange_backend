@@ -10,8 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
-    "lint": "eslint .",
-    "bench": "node bench/engine.bench.js"
+    "lint": "eslint ."
   },
   "keywords": [],
   "author": "",

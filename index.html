@@ -3,41 +3,58 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Exchange Matching Engine API Tester — Phase 1 & 2</title>
+  <title>Exchange Auth API — Interactive Tester & Service</title>
+  <meta name="description" content="Exchange Authentication Service with JWT, refresh token rotation, bcrypt password hashing, and clean MVC architecture." />
   <style>
     :root {
       --bg: #090d16;
       --card: #111827;
+      --card-hover: #162032;
       --border: #1f2937;
+      --border-focus: #3b82f6;
       --text: #f3f4f6;
       --muted: #9ca3af;
       --accent: #3b82f6;
-      --accent-hover: #1d4ed8;
+      --accent-hover: #2563eb;
       --green: #10b981;
-      --green-bg: rgba(16, 185, 129, 0.1);
+      --green-bg: rgba(16, 185, 129, 0.12);
       --red: #ef4444;
-      --red-bg: rgba(239, 68, 68, 0.1);
+      --red-bg: rgba(239, 68, 68, 0.12);
+      --amber: #f59e0b;
+      --amber-bg: rgba(245, 158, 11, 0.12);
       --purple: #8b5cf6;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background-color: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       padding: 24px;
       line-height: 1.5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
     }
     .header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 18px;
+      padding-bottom: 20px;
       border-bottom: 1px solid var(--border);
-      margin-bottom: 20px;
+      margin-bottom: 24px;
       flex-wrap: wrap;
       gap: 16px;
     }
-    .title-group h1 { font-size: 22px; font-weight: 700; color: #fff; }
+    .title-group h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
     .badge {
       display: inline-block;
       padding: 3px 10px;
@@ -48,726 +65,646 @@
       letter-spacing: 0.05em;
       background: #1e3a8a;
       color: #93c5fd;
-      margin-left: 8px;
     }
+    .badge-green { background: var(--green-bg); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
     .badge-purple { background: #4c1d95; color: #c4b5fd; }
-    .nav-tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 10px;
-      overflow-x: auto;
-    }
-    .tab-btn {
-      background: transparent;
-      border: 1px solid transparent;
-      color: var(--muted);
-      padding: 8px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      transition: all 0.15s;
-    }
-    .tab-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
-    .tab-btn.active { background: var(--card); border-color: var(--border); color: var(--accent); }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
+    .subtext { font-size: 13px; color: var(--muted); margin-top: 4px; }
 
-    .stats-bar {
+    .status-banner {
       display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-    }
-    .stat-card {
-      background: var(--card);
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(30, 41, 59, 0.7);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 12px 16px;
-      flex: 1;
-      min-width: 140px;
+      padding: 12px 18px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      flex-wrap: wrap;
+      gap: 12px;
     }
-    .stat-label { font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; }
-    .stat-val { font-size: 18px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    .auth-state {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+    }
+    .indicator-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+    .indicator-dot.online { background: var(--green); box-shadow: 0 0 10px var(--green); }
+
     .grid {
       display: grid;
-      grid-template-columns: 1.1fr 1.2fr;
-      gap: 20px;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
     }
-    @media (max-width: 1024px) { .grid { grid-template-columns: 1fr; } }
-    .panel {
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 18px;
-      margin-bottom: 20px;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 24px;
     }
-    .panel-header {
-      font-size: 14px;
-      font-weight: 600;
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
       margin-bottom: 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
-    th { text-align: left; padding: 6px 8px; color: var(--muted); font-size: 11px; border-bottom: 1px solid var(--border); }
-    td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.03); }
-    .ask-price { color: var(--red); font-weight: 600; }
-    .bid-price { color: var(--green); font-weight: 600; }
-    .btn {
-      background: #2563eb;
-      color: white;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-      transition: background 0.15s;
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 18px;
+      padding-bottom: 6px;
     }
-    .btn:hover { background: #1d4ed8; }
-    .btn-secondary { background: #374151; }
-    .btn-secondary:hover { background: #4b5563; }
-    .btn-danger { background: #b91c1c; }
-    .btn-danger:hover { background: #991b1b; }
-    .btn-purple { background: #7c3aed; }
-    .btn-purple:hover { background: #6d28d9; }
-    .btn-sm { padding: 4px 8px; font-size: 11px; }
-    .input-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-    input, select {
-      background: #0f172a;
-      border: 1px solid var(--border);
-      color: white;
-      padding: 8px 10px;
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 6px 12px;
       border-radius: 6px;
       font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
     }
-    .log-box {
-      background: #0b0f19;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 10px;
-      height: 180px;
-      overflow-y: auto;
-      font-family: monospace;
-      font-size: 12px;
-    }
-    .log-entry { margin-bottom: 4px; padding: 3px 6px; border-radius: 4px; }
-    .log-trade { background: rgba(59, 130, 246, 0.15); color: #93c5fd; }
-    .log-accept { color: #86efac; }
-    .log-cancel { color: #fca5a5; }
-    .log-reject { color: #f87171; font-weight: bold; }
-    .code-box {
-      background: #080c14;
-      border: 1px solid var(--border);
-      padding: 12px;
-      border-radius: 6px;
-      font-family: monospace;
-      font-size: 12px;
-      color: #94a3b8;
-      overflow-x: auto;
-      margin-top: 10px;
-    }
-    .presets-bar {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
+    .tab-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    .tab-btn.active { color: var(--accent); background: rgba(59, 130, 246, 0.1); }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    .form-group {
       margin-bottom: 14px;
     }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    input {
+      width: 100%;
+      background: #0b0f19;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--border-focus);
+    }
+    .hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: var(--accent-hover); }
+    .btn-secondary { background: #374151; }
+    .btn-secondary:hover { background: #4b5563; }
+    .btn-danger { background: #dc2626; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-success { background: #059669; }
+    .btn-success:hover { background: #047857; }
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .quick-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .log-box {
+      background: #050811;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      max-height: 480px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #cbd5e1;
+    }
+    .response-header {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .status-tag {
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .status-tag.ok { background: var(--green-bg); color: var(--green); }
+    .status-tag.err { background: var(--red-bg); color: var(--red); }
+
+    .token-preview {
+      background: #090e1a;
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #93c5fd;
+      margin-top: 10px;
+      word-break: break-all;
+      max-height: 80px;
+      overflow-y: auto;
+    }
+
+    .endpoint-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .endpoint-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .method {
+      font-weight: 700;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .method.post { background: #1e3a8a; color: #93c5fd; }
+    .method.get { background: #064e3b; color: #6ee7b7; }
+    .method.put { background: #78350f; color: #fde68a; }
+    .path { font-family: monospace; color: #e2e8f0; font-weight: 600; }
+    .desc { color: var(--muted); margin-left: auto; font-size: 11px; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="title-group">
-      <h1>Exchange Matching Engine <span class="badge">Phase 1 & Phase 2</span><span class="badge badge-purple">API Tester</span></h1>
-      <p style="font-size: 12px; color: var(--muted); margin-top: 4px;">Simulation • Play Money • Pure JS • GTC, IOC, FOK, Post-Only • BigInt Money • 860K+ ops/sec</p>
+  <div class="container">
+    <div class="header">
+      <div class="title-group">
+        <h1>Exchange Auth Service <span class="badge badge-green">Active</span> <span class="badge badge-purple">MVC Architecture</span></h1>
+        <div class="subtext">JWT Access & Refresh Tokens • Bcrypt Hashing • Zod Validation • In-Memory Store • Clean Separation of Concerns</div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-secondary" onclick="checkHealth()">Check Health</button>
+        <button class="btn btn-danger" onclick="clearSession()">Reset Session</button>
+      </div>
     </div>
-    <div style="display: flex; gap: 8px;">
-      <button class="btn btn-secondary" onclick="resetBookA()">Reload Book A</button>
-      <button class="btn" onclick="runBenchUI()">Run 1M Benchmark</button>
-    </div>
-  </div>
 
-  <div class="stats-bar">
-    <div class="stat-card">
-      <div class="stat-label">Market</div>
-      <div class="stat-val" id="stat-market">BTCINR</div>
+    <div class="status-banner">
+      <div class="auth-state">
+        <span class="indicator-dot" id="auth-dot"></span>
+        <span id="auth-status-text">Not Authenticated</span>
+      </div>
+      <div id="auth-user-badge" style="color: var(--muted); font-size: 12px;">No active user token</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Best Bid</div>
-      <div class="stat-val bid-price" id="stat-bid">—</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Best Ask</div>
-      <div class="stat-val ask-price" id="stat-ask">—</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Spread</div>
-      <div class="stat-val" id="stat-spread">—</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Seq / Trade No</div>
-      <div class="stat-val" style="font-size: 16px;" id="stat-counters">1 / 1</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Open Orders</div>
-      <div class="stat-val" style="font-size: 16px;" id="stat-open-count">7</div>
-    </div>
-  </div>
 
-  <div class="nav-tabs">
-    <button class="tab-btn active" onclick="switchTab('tab-trading')">1. Order Placement & Depth</button>
-    <button class="tab-btn" onclick="switchTab('tab-validators')">2. Order Validator Sandbox</button>
-    <button class="tab-btn" onclick="switchTab('tab-protection')">3. Market Protection Price</button>
-    <button class="tab-btn" onclick="switchTab('tab-money')">4. Money & Fee Calculator</button>
-    <button class="tab-btn" onclick="switchTab('tab-rebuild')">5. Book Rebuilder</button>
-    <button class="tab-btn" onclick="switchTab('tab-spec')">6. Verification & Matrix</button>
-  </div>
-
-  <!-- TAB 1: Trading & Depth -->
-  <div id="tab-trading" class="tab-content active">
     <div class="grid">
-      <!-- Depth Panel -->
-      <div class="panel">
-        <div class="panel-header">
-          <span>Aggregated Order Book Depth</span>
-          <span style="font-size: 11px; color: var(--muted);">Best Price First (Depth 20)</span>
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <div>
-            <div style="font-size: 11px; font-weight: 600; color: var(--green); margin-bottom: 6px;">BIDS (BUY)</div>
-            <table>
-              <thead><tr><th>Price (INR)</th><th>Qty (BTC)</th></tr></thead>
-              <tbody id="bids-tbody"></tbody>
-            </table>
+      <!-- Left Column: Authentication Controls -->
+      <div>
+        <div class="card">
+          <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('login')">Log In</button>
+            <button class="tab-btn" onclick="switchTab('register')">Register</button>
+            <button class="tab-btn" onclick="switchTab('profile')">User Profile</button>
+            <button class="tab-btn" onclick="switchTab('security')">Password</button>
           </div>
-          <div>
-            <div style="font-size: 11px; font-weight: 600; color: var(--red); margin-bottom: 6px;">ASKS (SELL)</div>
-            <table>
-              <thead><tr><th>Price (INR)</th><th>Qty (BTC)</th></tr></thead>
-              <tbody id="asks-tbody"></tbody>
-            </table>
+
+          <!-- Tab 1: Log In -->
+          <div id="tab-login" class="tab-pane active">
+            <div class="quick-actions">
+              <button class="btn btn-secondary" style="font-size: 11px;" onclick="fillDemoCredentials()">Use Demo Account</button>
+            </div>
+            <form onsubmit="handleLogin(event)">
+              <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="login-email" value="trader@exchange.com" required />
+              </div>
+              <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="login-password" value="Password123!" required />
+              </div>
+              <div class="btn-group">
+                <button type="submit" class="btn">Log In</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Tab 2: Register -->
+          <div id="tab-register" class="tab-pane">
+            <form onsubmit="handleRegister(event)">
+              <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="reg-name" placeholder="Alice Trader" />
+              </div>
+              <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="reg-email" placeholder="alice@exchange.com" required />
+              </div>
+              <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="reg-password" placeholder="Min 8 chars, 1 uppercase, 1 digit" required />
+                <div class="hint">Must contain at least 8 chars, 1 uppercase letter, 1 lowercase letter, 1 number.</div>
+              </div>
+              <div class="btn-group">
+                <button type="submit" class="btn btn-success">Create Account</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Tab 3: User Profile & Actions -->
+          <div id="tab-profile" class="tab-pane">
+            <p style="font-size: 13px; color: var(--muted); margin-bottom: 14px;">
+              Protected route requiring valid Bearer Access Token.
+            </p>
+            <div class="btn-group">
+              <button class="btn" onclick="fetchProfile()">Fetch Profile (GET /api/auth/me)</button>
+              <button class="btn btn-secondary" onclick="verifyActiveToken()">Verify Token</button>
+              <button class="btn btn-secondary" onclick="handleRefresh()">Refresh Token</button>
+              <button class="btn btn-danger" onclick="handleLogout()">Log Out</button>
+            </div>
+            <div id="token-box" style="display: none; margin-top: 14px;">
+              <label>Current Access Token</label>
+              <div class="token-preview" id="token-display">None</div>
+            </div>
+          </div>
+
+          <!-- Tab 4: Security & Password -->
+          <div id="tab-security" class="tab-pane">
+            <form onsubmit="handleChangePassword(event)">
+              <div class="form-group">
+                <label>Current Password</label>
+                <input type="password" id="curr-password" required />
+              </div>
+              <div class="form-group">
+                <label>New Password</label>
+                <input type="password" id="new-password" required />
+                <div class="hint">Min 8 chars, 1 uppercase, 1 lowercase, 1 digit.</div>
+              </div>
+              <div class="btn-group">
+                <button type="submit" class="btn btn-secondary">Update Password</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Endpoints Reference Card -->
+        <div class="card">
+          <div class="card-title">Auth Endpoints Specification</div>
+          <div class="endpoint-list">
+            <div class="endpoint-item">
+              <span class="method post">POST</span>
+              <span class="path">/api/auth/register</span>
+              <span class="desc">Create account & issue tokens</span>
+            </div>
+            <div class="endpoint-item">
+              <span class="method post">POST</span>
+              <span class="path">/api/auth/login</span>
+              <span class="desc">Authenticate user & issue tokens</span>
+            </div>
+            <div class="endpoint-item">
+              <span class="method post">POST</span>
+              <span class="path">/api/auth/refresh</span>
+              <span class="desc">Rotate refresh token</span>
+            </div>
+            <div class="endpoint-item">
+              <span class="method post">POST</span>
+              <span class="path">/api/auth/logout</span>
+              <span class="desc">Revoke session</span>
+            </div>
+            <div class="endpoint-item">
+              <span class="method get">GET</span>
+              <span class="path">/api/auth/me</span>
+              <span class="desc">Get current user (Bearer)</span>
+            </div>
+            <div class="endpoint-item">
+              <span class="method put">PUT</span>
+              <span class="path">/api/auth/change-password</span>
+              <span class="desc">Update password</span>
+            </div>
+            <div class="endpoint-item">
+              <span class="method get">GET</span>
+              <span class="path">/api/auth/verify</span>
+              <span class="desc">Validate active token</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Command Panel -->
-      <div class="panel">
-        <div class="panel-header">
-          <span>Submit Order Command</span>
-          <span style="font-size: 11px; color: var(--muted);">POST /api/process</span>
-        </div>
-
-        <div style="font-size: 11px; color: var(--muted); margin-bottom: 6px;">Specification Presets:</div>
-        <div class="presets-bar">
-          <button class="btn btn-secondary btn-sm" onclick="setPreset('P1T05')">P1-T05 GTC Sweep</button>
-          <button class="btn btn-secondary btn-sm" onclick="setPreset('P2T01')">P2-T01 IOC Partial</button>
-          <button class="btn btn-secondary btn-sm" onclick="setPreset('P2T03')">P2-T03 FOK Fill</button>
-          <button class="btn btn-secondary btn-sm" onclick="setPreset('P2T04')">P2-T04 FOK Reject</button>
-          <button class="btn btn-secondary btn-sm" onclick="setPreset('P2T06')">P2-T06 PostOnly Reject</button>
-          <button class="btn btn-secondary btn-sm" onclick="setPreset('P2T07')">P2-T07 PostOnly Rest</button>
-        </div>
-
-        <div class="input-row">
-          <select id="cmd-side">
-            <option value="BUY">BUY</option>
-            <option value="SELL">SELL</option>
-          </select>
-          <select id="cmd-tif">
-            <option value="GTC">GTC (Good-Til-Cancelled)</option>
-            <option value="IOC">IOC (Immediate-Or-Cancel)</option>
-            <option value="FOK">FOK (Fill-Or-Kill)</option>
-          </select>
-          <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer;">
-            <input type="checkbox" id="cmd-postonly" /> Post-Only
-          </label>
-        </div>
-
-        <div class="input-row">
-          <input id="cmd-price" type="number" placeholder="Price in INR (e.g. 5005000)" value="5005000" style="flex: 1;" />
-          <input id="cmd-qty" type="text" placeholder="Qty in BTC (e.g. 0.7)" value="0.7" style="width: 140px;" />
-        </div>
-
-        <div class="input-row">
-          <input id="cmd-userid" type="text" placeholder="User ID" value="TakerUser" style="width: 130px;" />
-          <input id="cmd-orderid" type="text" placeholder="Order ID" value="ORD_201" style="width: 130px;" />
-          <button class="btn" style="flex: 1;" onclick="submitPlace()">Send PLACE</button>
-        </div>
-
-        <div style="margin-top: 14px; border-top: 1px solid var(--border); padding-top: 10px;">
-          <div style="font-size: 12px; font-weight: 600; margin-bottom: 6px;">Cancel Order by ID</div>
-          <div class="input-row">
-            <input id="cancel-orderid" type="text" placeholder="Order ID (e.g. S4)" value="S4" style="flex: 1;" />
-            <button class="btn btn-danger" onclick="submitCancel()">Send CANCEL</button>
+      <!-- Right Column: API Response Inspector -->
+      <div>
+        <div class="card" style="height: calc(100% - 24px);">
+          <div class="card-title">
+            <span>API Response Inspector</span>
+            <span id="response-status" class="status-tag ok" style="display: none;">200 OK</span>
           </div>
-        </div>
-
-        <div style="margin-top: 12px;">
-          <div style="font-size: 12px; font-weight: 600; margin-bottom: 4px;">Engine Event Log</div>
-          <div class="log-box" id="event-log"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TAB 2: Order Validators -->
-  <div id="tab-validators" class="tab-content">
-    <div class="panel">
-      <div class="panel-header">
-        <span>Order Validation Sandbox (POST /api/validate-order)</span>
-        <span style="font-size: 11px; color: var(--muted);">Strict Rule Checks 1–6</span>
-      </div>
-      <p style="font-size: 12px; color: var(--muted); margin-bottom: 14px;">
-        Validates incoming orders against exchange risk parameters prior to engine submission:
-        <code>INVALID_TIF</code>, <code>INVALID_COMBINATION</code>, <code>INVALID_TICK</code>, <code>INVALID_LOT</code>, <code>BELOW_MIN_NOTIONAL</code>, <code>ABOVE_MAX_NOTIONAL</code>.
-      </p>
-
-      <div class="input-row">
-        <input id="val-price" type="number" placeholder="Price (paise)" value="500000050" style="flex: 1;" />
-        <input id="val-qty" type="number" placeholder="Qty (satoshis)" value="10000000" style="flex: 1;" />
-        <select id="val-tif">
-          <option value="GTC">GTC</option>
-          <option value="IOC">IOC</option>
-          <option value="FOK">FOK</option>
-          <option value="GTD">GTD (Invalid)</option>
-        </select>
-        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer;">
-          <input type="checkbox" id="val-postonly" /> Post-Only
-        </label>
-        <button class="btn btn-purple" onclick="runValidation()">Validate Order</button>
-      </div>
-
-      <div class="presets-bar" style="margin-top: 10px;">
-        <button class="btn btn-secondary btn-sm" onclick="setValPreset('INVALID_TICK')">P2-T26: Invalid Tick</button>
-        <button class="btn btn-secondary btn-sm" onclick="setValPreset('INVALID_LOT')">P2-T27: Invalid Lot</button>
-        <button class="btn btn-secondary btn-sm" onclick="setValPreset('BELOW_MIN_NOTIONAL')">P2-T28: Below Min Notional</button>
-        <button class="btn btn-secondary btn-sm" onclick="setValPreset('MIN_NOTIONAL_OK')">P2-T29: Min Notional OK</button>
-        <button class="btn btn-secondary btn-sm" onclick="setValPreset('ABOVE_MAX_NOTIONAL')">P2-T30: Above Max Notional</button>
-        <button class="btn btn-secondary btn-sm" onclick="setValPreset('INVALID_COMBINATION')">P2-T31: PostOnly + IOC</button>
-      </div>
-
-      <div class="code-box" id="val-result">Validation result will appear here...</div>
-    </div>
-  </div>
-
-  <!-- TAB 3: Protection Price -->
-  <div id="tab-protection" class="tab-content">
-    <div class="panel">
-      <div class="panel-header">
-        <span>Market Order Protection Price Calculator (POST /api/protection-price)</span>
-        <span style="font-size: 11px; color: var(--muted);">Guaranteed Slippage Bound</span>
-      </div>
-      <p style="font-size: 12px; color: var(--muted); margin-bottom: 14px;">
-        Converts unrestricted market orders into protected IOC limit orders.
-        BUY: Ceil to tick of <code>bestAsk * (10,000 + bps) / 10,000</code>.
-        SELL: Floor to tick of <code>bestBid * (10,000 - bps) / 10,000</code>.
-      </p>
-
-      <div class="input-row">
-        <select id="prot-side">
-          <option value="BUY">BUY</option>
-          <option value="SELL">SELL</option>
-        </select>
-        <input id="prot-opp-price" type="number" placeholder="Best Opposite Price (paise)" value="500200000" style="flex: 1;" />
-        <input id="prot-bps" type="number" placeholder="Slippage BPS (1-500)" value="100" style="width: 140px;" />
-        <input id="prot-tick" type="number" placeholder="Tick Size" value="10000" style="width: 120px;" />
-        <button class="btn btn-purple" onclick="calcProtection()">Calculate Price</button>
-      </div>
-
-      <div class="presets-bar" style="margin-top: 10px;">
-        <button class="btn btn-secondary btn-sm" onclick="setProtPreset(500200000, 100, 'BUY')">P2-T10: BUY 100 bps</button>
-        <button class="btn btn-secondary btn-sm" onclick="setProtPreset(500000000, 100, 'SELL')">P2-T11: SELL 100 bps</button>
-        <button class="btn btn-secondary btn-sm" onclick="setProtPreset(500200000, 1, 'BUY')">P2-T12: BUY 1 bps</button>
-        <button class="btn btn-secondary btn-sm" onclick="setProtPreset(null, 100, 'BUY')">P2-T13: No Liquidity</button>
-      </div>
-
-      <div class="code-box" id="prot-result">Protection price result will appear here...</div>
-    </div>
-  </div>
-
-  <!-- TAB 4: Money & Fee Calculator -->
-  <div id="tab-money" class="tab-content">
-    <div class="grid">
-      <div class="panel">
-        <div class="panel-header">
-          <span>Notional Calculation (POST /api/money/notional)</span>
-          <span style="font-size: 11px; color: var(--muted);">Exact BigInt Division</span>
-        </div>
-        <div class="input-row">
-          <input id="not-price" type="number" placeholder="Price (paise)" value="500000000" style="flex: 1;" />
-          <input id="not-qty" type="number" placeholder="Qty (satoshis)" value="10000000" style="flex: 1;" />
-          <button class="btn btn-purple" onclick="calcNotional()">Compute</button>
-        </div>
-        <div class="code-box" id="not-result">Notional result will appear here...</div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-header">
-          <span>Fee Calculation (POST /api/money/fee)</span>
-          <span style="font-size: 11px; color: var(--muted);">Ceiling Rounding (Never 0)</span>
-        </div>
-        <div class="input-row">
-          <input id="fee-notional" type="number" placeholder="Notional (paise)" value="50000000" style="flex: 1;" />
-          <input id="fee-bps" type="number" placeholder="Fee BPS" value="10" style="width: 120px;" />
-          <button class="btn btn-purple" onclick="calcFee()">Compute Fee</button>
-        </div>
-        <div class="code-box" id="fee-result">Fee result will appear here...</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TAB 5: Book Rebuilder -->
-  <div id="tab-rebuild" class="tab-content">
-    <div class="panel">
-      <div class="panel-header">
-        <span>Rebuild Engine From Open Orders (POST /api/rebuild)</span>
-        <span style="font-size: 11px; color: var(--muted);">P2-T33 Recovery Simulator</span>
-      </div>
-      <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px;">
-        Restores engine state from a list of open orders in exact time-priority without matching or emitting spurious events.
-      </p>
-      <button class="btn btn-purple" onclick="executeRebuildTest()">Snapshot & Rebuild Current Book</button>
-      <div class="code-box" id="rebuild-result">Click above to snapshot open orders and re-initialize engine...</div>
-    </div>
-  </div>
-
-  <!-- TAB 6: Verification Matrix -->
-  <div id="tab-spec" class="tab-content">
-    <div class="panel">
-      <div class="panel-header">
-        <span>Phase 1 & Phase 2 Specification Matrix</span>
-        <span style="color: var(--green); font-size: 12px;">✔ 81 Tests Passing • 100% Statements/Lines • 98.6% Branches • 860K+ orders/sec</span>
-      </div>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; font-size: 12px;">
-        <div style="background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 6px;">
-          <strong>FR2.1 — Immediate-Or-Cancel (IOC):</strong> Matches crossing liquidity; cancels unexecuted remainder with <code>IOC_REMAINDER</code>.
-        </div>
-        <div style="background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 6px;">
-          <strong>FR2.2 — Fill-Or-Kill (FOK):</strong> Atomic pre-check walk halts on self-orders; fills completely or rejects with <code>FOK_NOT_FILLABLE</code>.
-        </div>
-        <div style="background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 6px;">
-          <strong>FR2.3 — Post-Only:</strong> Rejects with <code>POST_ONLY_WOULD_CROSS</code> if it would match immediately, otherwise rests as maker quote.
-        </div>
-        <div style="background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 6px;">
-          <strong>FR2.4 — Max Fills Cap:</strong> Caps one order execution to 50 fills; cancels remainder with reason <code>MAX_FILLS</code>.
-        </div>
-        <div style="background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 6px;">
-          <strong>FR2.5 — Protection Price:</strong> Algorithmic slippage cap (BUY ceil, SELL floor) protects market orders.
-        </div>
-        <div style="background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 6px;">
-          <strong>FR2.6 — Exact BigInt Money:</strong> Zero decimals; ceiling fee rounding guarantees real trades pay at least 1 paisa.
-        </div>
-        <div style="background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 6px;">
-          <strong>FR2.7 — Input Validators:</strong> Refuses invalid tick, lot, notional limits, and illegal order combinations.
-        </div>
-        <div style="background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 6px;">
-          <strong>FR2.8 — Book Rebuild:</strong> Recovers order book state in time-priority sequence from snapshot.
-        </div>
-        <div style="background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 6px;">
-          <strong>FR2.9 — Property Tests:</strong> 1,000 fast-check runs proven against all 11 exchange invariants with 0 failures.
+          <div class="response-header">
+            <span id="response-route">Ready for requests...</span>
+            <span id="response-time"></span>
+          </div>
+          <div class="log-box" id="json-viewer">// Responses will appear here in real-time...
+// Click "Log In" with demo account or create a new user.</div>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    function fmtInr(paise) {
-      return (Number(paise) / 100).toLocaleString('en-IN');
-    }
-    function fmtBtc(sat) {
-      return (Number(sat) / 1e8).toFixed(4);
+    let accessToken = localStorage.getItem('exchange_access_token') || null;
+    let refreshToken = localStorage.getItem('exchange_refresh_token') || null;
+
+    function updateAuthUI() {
+      const dot = document.getElementById('auth-dot');
+      const statusText = document.getElementById('auth-status-text');
+      const userBadge = document.getElementById('auth-user-badge');
+      const tokenBox = document.getElementById('token-box');
+      const tokenDisplay = document.getElementById('token-display');
+
+      if (accessToken) {
+        dot.className = 'indicator-dot online';
+        statusText.innerText = 'Authenticated (Bearer Token Active)';
+        statusText.style.color = 'var(--green)';
+        userBadge.innerText = localStorage.getItem('exchange_user_email') || 'Logged in';
+        if (tokenBox) tokenBox.style.display = 'block';
+        if (tokenDisplay) tokenDisplay.innerText = accessToken;
+      } else {
+        dot.className = 'indicator-dot';
+        statusText.innerText = 'Not Authenticated';
+        statusText.style.color = 'var(--muted)';
+        userBadge.innerText = 'No active token';
+        if (tokenBox) tokenBox.style.display = 'none';
+      }
     }
 
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-      document.getElementById(tabId).classList.add('active');
+    function switchTab(name) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
       event.target.classList.add('active');
+      const pane = document.getElementById(`tab-${name}`);
+      if (pane) pane.classList.add('active');
     }
 
-    async function refresh() {
+    function fillDemoCredentials() {
+      document.getElementById('login-email').value = 'trader@exchange.com';
+      document.getElementById('login-password').value = 'Password123!';
+    }
+
+    function showResponse(route, status, data, duration) {
+      const statusTag = document.getElementById('response-status');
+      statusTag.style.display = 'inline-block';
+      statusTag.innerText = status;
+      statusTag.className = status >= 200 && status < 300 ? 'status-tag ok' : 'status-tag err';
+
+      document.getElementById('response-route').innerText = route;
+      document.getElementById('response-time').innerText = duration ? `${duration}ms` : '';
+      document.getElementById('json-viewer').innerText = JSON.stringify(data, null, 2);
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      const t0 = performance.now();
+
       try {
-        const [healthRes, depthRes, ordersRes] = await Promise.all([
-          fetch('/api/health').then(r => r.json()),
-          fetch('/api/depth').then(r => r.json()),
-          fetch('/api/orders').then(r => r.json())
-        ]);
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const duration = Math.round(performance.now() - t0);
+        const data = await res.json();
+        showResponse('POST /api/auth/login', `${res.status} ${res.statusText}`, data, duration);
 
-        document.getElementById('stat-counters').innerText = healthRes.eventSeq + ' / ' + healthRes.tradeNo;
-        document.getElementById('stat-open-count').innerText = ordersRes.orders.length;
-        
-        document.getElementById('stat-bid').innerText = depthRes.bestBid ? '₹' + fmtInr(depthRes.bestBid.price) : 'None';
-        document.getElementById('stat-ask').innerText = depthRes.bestAsk ? '₹' + fmtInr(depthRes.bestAsk.price) : 'None';
-        document.getElementById('stat-spread').innerText = depthRes.spread !== null ? '₹' + fmtInr(depthRes.spread) : '—';
-
-        const bidsTbody = document.getElementById('bids-tbody');
-        bidsTbody.innerHTML = depthRes.bids.map(([price, qty]) => 
-          '<tr><td class="bid-price">₹' + fmtInr(price) + '</td><td>' + fmtBtc(qty) + '</td></tr>'
-        ).join('') || '<tr><td colspan="2" style="color: #6b7280; text-align: center;">Empty</td></tr>';
-
-        const asksTbody = document.getElementById('asks-tbody');
-        asksTbody.innerHTML = depthRes.asks.map(([price, qty]) => 
-          '<tr><td class="ask-price">₹' + fmtInr(price) + '</td><td>' + fmtBtc(qty) + '</td></tr>'
-        ).join('') || '<tr><td colspan="2" style="color: #6b7280; text-align: center;">Empty</td></tr>';
-
+        if (res.ok && data.data?.tokens) {
+          accessToken = data.data.tokens.accessToken;
+          refreshToken = data.data.tokens.refreshToken;
+          localStorage.setItem('exchange_access_token', accessToken);
+          localStorage.setItem('exchange_refresh_token', refreshToken);
+          localStorage.setItem('exchange_user_email', data.data.user.email);
+          updateAuthUI();
+        }
       } catch (err) {
-        console.error(err);
+        showResponse('POST /api/auth/login', 'Error', { error: err.message });
       }
     }
 
-    function log(msg, cls) {
-      const box = document.getElementById('event-log');
-      const div = document.createElement('div');
-      div.className = 'log-entry ' + (cls || '');
-      div.innerText = msg;
-      box.prepend(div);
-    }
+    async function handleRegister(e) {
+      e.preventDefault();
+      const name = document.getElementById('reg-name').value;
+      const email = document.getElementById('reg-email').value;
+      const password = document.getElementById('reg-password').value;
+      const t0 = performance.now();
 
-    async function submitPlace() {
-      const side = document.getElementById('cmd-side').value;
-      const tif = document.getElementById('cmd-tif').value;
-      const postOnly = document.getElementById('cmd-postonly').checked;
-      const inrPrice = Number(document.getElementById('cmd-price').value);
-      const btcQty = document.getElementById('cmd-qty').value;
-      const userId = document.getElementById('cmd-userid').value;
-      const orderId = document.getElementById('cmd-orderid').value;
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password })
+        });
+        const duration = Math.round(performance.now() - t0);
+        const data = await res.json();
+        showResponse('POST /api/auth/register', `${res.status} ${res.statusText}`, data, duration);
 
-      const price = Math.round(inrPrice * 100);
-      const [w, f = ''] = String(btcQty).split('.');
-      const qty = Number(w) * 1e8 + Number(f.padEnd(8, '0').slice(0, 8));
-
-      const res = await fetch('/api/process', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'PLACE',
-          order: { id: orderId, userId, side, price, qty, tif, postOnly }
-        })
-      });
-      const data = await res.json();
-      if (!data.success) {
-        log('Error: ' + data.error, 'log-reject');
-      } else {
-        for (const ev of data.events) {
-          if (ev.type === 'TradeExecuted') {
-            log('⚡ Trade #' + ev.tradeNo + ': ' + fmtBtc(ev.qty) + ' BTC @ ₹' + fmtInr(ev.price) + ' (Taker: ' + ev.takerOrderId + ', Maker: ' + ev.makerOrderId + ')', 'log-trade');
-          } else if (ev.type === 'OrderAccepted') {
-            log('✓ Accepted #' + ev.orderId + ' ' + ev.side + ' ' + fmtBtc(ev.qty) + ' BTC @ ₹' + fmtInr(ev.price) + ' (' + ev.tif + ')', 'log-accept');
-          } else if (ev.type === 'OrderCancelled') {
-            log('✖ Cancelled #' + ev.orderId + ' reason: ' + ev.reason + ', remaining: ' + fmtBtc(ev.remaining), 'log-cancel');
-          } else if (ev.type === 'OrderRejected') {
-            log('⚠ Rejected #' + ev.orderId + ' reason: ' + ev.reason, 'log-reject');
-          }
+        if (res.ok && data.data?.tokens) {
+          accessToken = data.data.tokens.accessToken;
+          refreshToken = data.data.tokens.refreshToken;
+          localStorage.setItem('exchange_access_token', accessToken);
+          localStorage.setItem('exchange_refresh_token', refreshToken);
+          localStorage.setItem('exchange_user_email', data.data.user.email);
+          updateAuthUI();
         }
+      } catch (err) {
+        showResponse('POST /api/auth/register', 'Error', { error: err.message });
       }
-      refresh();
     }
 
-    async function submitCancel() {
-      const orderId = document.getElementById('cancel-orderid').value;
-      const res = await fetch('/api/process', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'CANCEL', orderId })
-      });
-      const data = await res.json();
-      if (!data.success) {
-        log('Error: ' + data.error, 'log-reject');
-      } else {
-        for (const ev of data.events) {
-          if (ev.type === 'OrderCancelled') {
-            log('✖ Cancelled order #' + ev.orderId + ' (' + ev.reason + ')', 'log-cancel');
-          } else {
-            log('⚠ Rejected cancel #' + ev.orderId + ' (' + ev.reason + ')', 'log-reject');
-          }
+    async function fetchProfile() {
+      if (!accessToken) {
+        alert('Please log in first.');
+        return;
+      }
+      const t0 = performance.now();
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        const duration = Math.round(performance.now() - t0);
+        const data = await res.json();
+        showResponse('GET /api/auth/me', `${res.status} ${res.statusText}`, data, duration);
+      } catch (err) {
+        showResponse('GET /api/auth/me', 'Error', { error: err.message });
+      }
+    }
+
+    async function verifyActiveToken() {
+      if (!accessToken) {
+        alert('Please log in first.');
+        return;
+      }
+      const t0 = performance.now();
+      try {
+        const res = await fetch('/api/auth/verify', {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        const duration = Math.round(performance.now() - t0);
+        const data = await res.json();
+        showResponse('GET /api/auth/verify', `${res.status} ${res.statusText}`, data, duration);
+      } catch (err) {
+        showResponse('GET /api/auth/verify', 'Error', { error: err.message });
+      }
+    }
+
+    async function handleRefresh() {
+      if (!refreshToken) {
+        alert('No refresh token available. Please log in.');
+        return;
+      }
+      const t0 = performance.now();
+      try {
+        const res = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken })
+        });
+        const duration = Math.round(performance.now() - t0);
+        const data = await res.json();
+        showResponse('POST /api/auth/refresh', `${res.status} ${res.statusText}`, data, duration);
+
+        if (res.ok && data.data?.tokens) {
+          accessToken = data.data.tokens.accessToken;
+          refreshToken = data.data.tokens.refreshToken;
+          localStorage.setItem('exchange_access_token', accessToken);
+          localStorage.setItem('exchange_refresh_token', refreshToken);
+          updateAuthUI();
         }
-      }
-      refresh();
-    }
-
-    async function resetBookA() {
-      await fetch('/api/reset-book-a', { method: 'POST' });
-      log('--- Reset Order Book to Book A ---', 'log-accept');
-      refresh();
-    }
-
-    function setPreset(type) {
-      if (type === 'P1T05') {
-        document.getElementById('cmd-side').value = 'BUY';
-        document.getElementById('cmd-tif').value = 'GTC';
-        document.getElementById('cmd-postonly').checked = false;
-        document.getElementById('cmd-price').value = '5005000';
-        document.getElementById('cmd-qty').value = '0.7';
-        document.getElementById('cmd-userid').value = 'Taker_P1T05';
-        document.getElementById('cmd-orderid').value = 'T5';
-      } else if (type === 'P2T01') {
-        document.getElementById('cmd-side').value = 'BUY';
-        document.getElementById('cmd-tif').value = 'IOC';
-        document.getElementById('cmd-postonly').checked = false;
-        document.getElementById('cmd-price').value = '5005000';
-        document.getElementById('cmd-qty').value = '0.7';
-        document.getElementById('cmd-userid').value = 'Taker_IOC';
-        document.getElementById('cmd-orderid').value = 'IOC_1';
-      } else if (type === 'P2T03') {
-        document.getElementById('cmd-side').value = 'BUY';
-        document.getElementById('cmd-tif').value = 'FOK';
-        document.getElementById('cmd-postonly').checked = false;
-        document.getElementById('cmd-price').value = '5005000';
-        document.getElementById('cmd-qty').value = '0.6';
-        document.getElementById('cmd-userid').value = 'Taker_FOK_OK';
-        document.getElementById('cmd-orderid').value = 'FOK_OK';
-      } else if (type === 'P2T04') {
-        document.getElementById('cmd-side').value = 'BUY';
-        document.getElementById('cmd-tif').value = 'FOK';
-        document.getElementById('cmd-postonly').checked = false;
-        document.getElementById('cmd-price').value = '5005000';
-        document.getElementById('cmd-qty').value = '0.7';
-        document.getElementById('cmd-userid').value = 'Taker_FOK_REJ';
-        document.getElementById('cmd-orderid').value = 'FOK_REJ';
-      } else if (type === 'P2T06') {
-        document.getElementById('cmd-side').value = 'BUY';
-        document.getElementById('cmd-tif').value = 'GTC';
-        document.getElementById('cmd-postonly').checked = true;
-        document.getElementById('cmd-price').value = '5002000';
-        document.getElementById('cmd-qty').value = '0.1';
-        document.getElementById('cmd-userid').value = 'Maker_CROSS';
-        document.getElementById('cmd-orderid').value = 'PO_CROSS';
-      } else if (type === 'P2T07') {
-        document.getElementById('cmd-side').value = 'BUY';
-        document.getElementById('cmd-tif').value = 'GTC';
-        document.getElementById('cmd-postonly').checked = true;
-        document.getElementById('cmd-price').value = '5001000';
-        document.getElementById('cmd-qty').value = '0.1';
-        document.getElementById('cmd-userid').value = 'Maker_REST';
-        document.getElementById('cmd-orderid').value = 'PO_REST';
+      } catch (err) {
+        showResponse('POST /api/auth/refresh', 'Error', { error: err.message });
       }
     }
 
-    async function runValidation() {
-      const price = Number(document.getElementById('val-price').value);
-      const qty = Number(document.getElementById('val-qty').value);
-      const tif = document.getElementById('val-tif').value;
-      const postOnly = document.getElementById('val-postonly').checked;
-
-      const res = await fetch('/api/validate-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          order: { price, qty, tif, postOnly },
-          marketCfg: { tickSize: 10000, lotSize: 10000, minNotional: 50000, maxNotional: 1000000000 }
-        })
-      });
-      const data = await res.json();
-      document.getElementById('val-result').innerText = JSON.stringify(data.result, null, 2);
-    }
-
-    function setValPreset(code) {
-      if (code === 'INVALID_TICK') {
-        document.getElementById('val-price').value = 500000050;
-        document.getElementById('val-qty').value = 10000000;
-        document.getElementById('val-tif').value = 'GTC';
-        document.getElementById('val-postonly').checked = false;
-      } else if (code === 'INVALID_LOT') {
-        document.getElementById('val-price').value = 500000000;
-        document.getElementById('val-qty').value = 15000;
-        document.getElementById('val-tif').value = 'GTC';
-        document.getElementById('val-postonly').checked = false;
-      } else if (code === 'BELOW_MIN_NOTIONAL') {
-        document.getElementById('val-price').value = 490000000;
-        document.getElementById('val-qty').value = 10000;
-        document.getElementById('val-tif').value = 'GTC';
-        document.getElementById('val-postonly').checked = false;
-      } else if (code === 'MIN_NOTIONAL_OK') {
-        document.getElementById('val-price').value = 500000000;
-        document.getElementById('val-qty').value = 10000;
-        document.getElementById('val-tif').value = 'GTC';
-        document.getElementById('val-postonly').checked = false;
-      } else if (code === 'ABOVE_MAX_NOTIONAL') {
-        document.getElementById('val-price').value = 500000000;
-        document.getElementById('val-qty').value = 200010000;
-        document.getElementById('val-tif').value = 'GTC';
-        document.getElementById('val-postonly').checked = false;
-      } else if (code === 'INVALID_COMBINATION') {
-        document.getElementById('val-price').value = 500000000;
-        document.getElementById('val-qty').value = 10000000;
-        document.getElementById('val-tif').value = 'IOC';
-        document.getElementById('val-postonly').checked = true;
-      }
-      runValidation();
-    }
-
-    async function calcProtection() {
-      const side = document.getElementById('prot-side').value;
-      const bestOppositePrice = document.getElementById('prot-opp-price').value ? Number(document.getElementById('prot-opp-price').value) : null;
-      const slippageBps = Number(document.getElementById('prot-bps').value);
-      const tickSize = Number(document.getElementById('prot-tick').value);
-
-      const res = await fetch('/api/protection-price', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ side, bestOppositePrice, slippageBps, tickSize })
-      });
-      const data = await res.json();
-      document.getElementById('prot-result').innerText = JSON.stringify(data, null, 2);
-    }
-
-    function setProtPreset(price, bps, side) {
-      document.getElementById('prot-side').value = side;
-      document.getElementById('prot-opp-price').value = price !== null ? price : '';
-      document.getElementById('prot-bps').value = bps;
-      calcProtection();
-    }
-
-    async function calcNotional() {
-      const price = Number(document.getElementById('not-price').value);
-      const qty = Number(document.getElementById('not-qty').value);
-      const res = await fetch('/api/money/notional', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ price, qty })
-      });
-      const data = await res.json();
-      document.getElementById('not-result').innerText = JSON.stringify(data, null, 2);
-    }
-
-    async function calcFee() {
-      const notional = Number(document.getElementById('fee-notional').value);
-      const bps = Number(document.getElementById('fee-bps').value);
-      const res = await fetch('/api/money/fee', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notional, bps })
-      });
-      const data = await res.json();
-      document.getElementById('fee-result').innerText = JSON.stringify(data, null, 2);
-    }
-
-    async function executeRebuildTest() {
-      const ordersRes = await fetch('/api/orders').then(r => r.json());
-      const res = await fetch('/api/rebuild', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ openOrders: ordersRes.orders, startSeq: 100, startTradeNo: 50 })
-      });
-      const data = await res.json();
-      document.getElementById('rebuild-result').innerText = JSON.stringify(data, null, 2);
-      refresh();
-    }
-
-    async function runBenchUI() {
-      log('Running 1,000,000 order benchmark... please wait ~1.2s', 'log-trade');
-      const res = await fetch('/api/bench');
-      const data = await res.json();
-      if (data.success) {
-        const r = data.result;
-        log('🏁 Benchmark: ' + r.ordersPerSec.toLocaleString() + ' orders/sec | p50: ' + r.p50Us + 'µs, p99: ' + r.p99Us + 'µs, trades: ' + r.totalTrades.toLocaleString(), 'log-trade');
+    async function handleLogout() {
+      const t0 = performance.now();
+      try {
+        const res = await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {})
+          },
+          body: JSON.stringify({ refreshToken })
+        });
+        const duration = Math.round(performance.now() - t0);
+        const data = await res.json();
+        showResponse('POST /api/auth/logout', `${res.status} ${res.statusText}`, data, duration);
+      } finally {
+        clearSession();
       }
     }
 
-    refresh();
+    async function handleChangePassword(e) {
+      e.preventDefault();
+      if (!accessToken) {
+        alert('Please log in first to change password.');
+        return;
+      }
+      const currentPassword = document.getElementById('curr-password').value;
+      const newPassword = document.getElementById('new-password').value;
+      const t0 = performance.now();
+
+      try {
+        const res = await fetch('/api/auth/change-password', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({ currentPassword, newPassword })
+        });
+        const duration = Math.round(performance.now() - t0);
+        const data = await res.json();
+        showResponse('PUT /api/auth/change-password', `${res.status} ${res.statusText}`, data, duration);
+        if (res.ok) {
+          clearSession();
+          alert('Password changed successfully! Please log in with your new password.');
+        }
+      } catch (err) {
+        showResponse('PUT /api/auth/change-password', 'Error', { error: err.message });
+      }
+    }
+
+    async function checkHealth() {
+      const t0 = performance.now();
+      try {
+        const res = await fetch('/api/health');
+        const duration = Math.round(performance.now() - t0);
+        const data = await res.json();
+        showResponse('GET /api/health', `${res.status} ${res.statusText}`, data, duration);
+      } catch (err) {
+        showResponse('GET /api/health', 'Error', { error: err.message });
+      }
+    }
+
+    function clearSession() {
+      accessToken = null;
+      refreshToken = null;
+      localStorage.removeItem('exchange_access_token');
+      localStorage.removeItem('exchange_refresh_token');
+      localStorage.removeItem('exchange_user_email');
+      updateAuthUI();
+    }
+
+    // Initialize UI on load
+    updateAuthUI();
   </script>
 </body>
 </html>
